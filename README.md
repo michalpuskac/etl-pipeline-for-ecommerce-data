@@ -21,7 +21,7 @@ This project implements a simple ETL (Extract, Transform, Load) pipeline to proc
     * Handling nested data (normalization of carts into `carts` and `cart_items` tables).
     * Processing product reviews list (extracting comments, calculating review count).
     * Duplicate removal.
-* **Load:** *(Planned)* Loading of transformed data into an SQL database (e.g., SQLite or PostgreSQL) using SQLAlchemy.
+* **Load:** *(Planned)* Loading of transformed data into an SQL database PostgreSQL using SQLAlchemy.
 * **Logging:** **Records** the pipeline progress to the console (INFO level) and to a file (`logs/etl_pipeline.log`, DEBUG level) for easy monitoring and debugging. Configuration is centralized.
 * **Configuration:** Allows setting API endpoints and file paths in `config.py`.
 
@@ -52,11 +52,11 @@ data-pipeline-eshop/
 
 1.  **Clone the repository:**
     ```bash
-    git clone <YOUR_REPOSITORY_URL>
+    git clone https://github.com/michalpuskac/etl-pipeline-for-ecommerce-data.git
     cd data-pipeline-eshop
     ```
 2.  **Prerequisites:**
-    * Python 3.10+ (or the version you are using)
+    * [Python 3.10+](https://www.python.org/downloads/) (or the version you are using)
     * [Poetry](https://python-poetry.org/) for dependency management
 3.  **Install dependencies:**
     ```bash
