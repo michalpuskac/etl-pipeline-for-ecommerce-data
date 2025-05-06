@@ -25,17 +25,7 @@ def setup_logging():
 
     except Exception as e:
         # Basic dump if the logging configuration fails
-        print(f"CHYBA: Nepodařilo se nastavit logování - {e}")
+        print(f"Error: Logging could not be setup - {e}")
         # You can use the basic basicConfig here as an emergency solution
         logging.basicConfig(level=logging.WARNING) 
-        logging.error("Logování nebylo správně nakonfigurováno!", exc_info=True)
-
-
-# Vysvětlení logging_setup.py:
-
-# Importuje potřebné moduly a hlavně config.
-# Funkce setup_logging():
-# Zajistí existenci adresáře pro logy (logs/).
-# Zavolá logging.config.dictConfig() a předá jí slovník LOGGING_CONFIG z config.py. Tím se aplikuje celé nastavení (formáty, handlery, úrovně).
-# Přidá jednoduchou zprávu, že logování bylo nastaveno.
-# Obsahuje základní try...except pro případ, že by konfigurace selhala.
+        logging.error("Logging was not configured correctly", exc_info=True)
