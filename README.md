@@ -3,9 +3,9 @@
 ![status](https://img.shields.io/badge/status-work--in--progress-yellow)
 
 🚧 **Project Status:** Currently in development  
-✅ **Completed:** Extract and Transform phases implemented  
-🔄 **Next Steps:** Implement Load phase and SQL-based analytics  
-🎯 **Target:** Fully functional ETL pipeline with reporting by end of **May 2025**
+✅ **Completed:** ETL phases implemented  
+🔄 **Next Steps:** Implement DDL-> SQL-based analytics -> Automation -> Docker
+🎯 **Target:** Fully functional ETL Automated pipeline with reporting by end of **May 2025**
 
 ## 📄 Description
 
