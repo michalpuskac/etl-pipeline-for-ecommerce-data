@@ -1,0 +1,3 @@
+[general]
+contrib = CC1
+ignore=body-is-missing,contrib-body-requires-signed-off-by
