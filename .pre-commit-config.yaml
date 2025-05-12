@@ -12,3 +12,9 @@ repos:
         entry: poetry run pylint --fail-under=8.0
         language: system
         types: [python]
+
+repos:
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
