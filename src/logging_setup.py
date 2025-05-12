@@ -1,8 +1,12 @@
+"""Module for configuration of logging logic"""
+
 # logging_setup.py
 import logging
 import logging.config
 import os
+
 import config
+
 
 def setup_logging():
     """
@@ -10,22 +14,22 @@ def setup_logging():
     Creates the log directory if it does not exist.
     """
     try:
-        # 1. Creating log directory
+        # Creating log directory
         log_dir = config.LOG_DIR
         os.makedirs(log_dir, exist_ok=True)
-        
-        # 2. Load and apply dictionary configuration
+
+        # Load and apply dictionary configuration
         logging.config.dictConfig(config.LOGGING_CONFIG)
-        
-        # 3. Log message about successful setup
+
+        # Log message about successful setup
         # We get a logger for this setup module
-        logger = logging.getLogger(__name__) 
-        logger.info("Logging successfully set.") 
+        logger = logging.getLogger(__name__)
+        logger.info("Logging successfully set.")
         # You will see this message if the root logger is set to INFO or DEBUG
 
     except Exception as e:
-        # Basic dump if the logging configuration fails
+        # Fallback in case of any unexpected logging setup failure
         print(f"Error: Logging could not be setup - {e}")
-        # You can use the basic basicConfig here as an emergency solution
-        logging.basicConfig(level=logging.WARNING) 
+        # use of basic basicConfig here as an emergency solution
+        logging.basicConfig(level=logging.WARNING)
         logging.error("Logging was not configured correctly", exc_info=True)
