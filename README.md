@@ -119,6 +119,7 @@ Run the complete ETL pipeline from the project root directory:
 
 ```bash
 python main.py
+```
 
 The script will execute the Extract, Transform, and Load phases. Progress is logged to the console and to the logs/etl_pipeline.log file. The data will be loaded into an SQLite database file located at data/ecommerce_pipeline.db (by default).
 
