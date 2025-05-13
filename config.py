@@ -142,7 +142,7 @@ else:
         "Pipeline can not continue in database configuration."
     )
     # Fallback to sqlite in case of Unknown database
-    print(f"INFO: Setting default fallback SQLite configuration.")
+    print("INFO: Setting default fallback SQLite configuration.")
     sqlite_filename_fallback = "ecommerce_pipeline_fallback.db"
     db_path_fallback = os.path.join(DATA_DIR, sqlite_filename_fallback)
     DB_CONNECTION_STRING = f"sqlite:///{db_path_fallback}"
