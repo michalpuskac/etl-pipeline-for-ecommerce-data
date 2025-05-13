@@ -9,12 +9,8 @@ import config
 from src.extract import fetch_from_api, save_to_json
 from src.load import create_db_engine, load_dataframe_to_db
 from src.logging_setup import setup_logging  # Import setup function
-from src.transform import (
-    convert_list_to_dataframe,
-    transform_carts,
-    transform_products,
-    transform_users,
-)
+from src.transform import (convert_list_to_dataframe, transform_carts,
+                           transform_products, transform_users)
 
 setup_logging()
 
@@ -46,7 +42,7 @@ def run_pipeline():
             save_to_json(raw_data, json_filename, RAW_DATA_DIR)
             extracted_files[name] = file_path  # Save path for next step
         else:
-            logger.warning(f"Extraction of {name} failed,  skipping current endpoint.")
+            logger.warning("Extraction of %s failed,  skipping current endpoint.", name)
             extracted_files[name] = None
 
     # === PART 2: TRANSFORM ===
