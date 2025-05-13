@@ -12,11 +12,11 @@ DOTENV_PATH = os.path.join(PROJECT_ROOT_DIR, ".env")
 
 if os.path.exists(DOTENV_PATH):
     load_dotenv(dotenv_path=DOTENV_PATH)
-    print(f"INFO: Variables from .env successfully loaded {DOTENV_PATH}")
+    print(f"INFO: Variables from .env successfully loaded {DOTENV_PATH}",)
 else:
     print(
         f"INFO: .env file could not be found, {DOTENV_PATH}."
-        "Default values or system environment variables are used."
+        f"Default values or system environment variables are used."
     )
 
 # --- Base project Configuration ---
@@ -25,8 +25,13 @@ BASE_DIR = PROJECT_ROOT_DIR
 DATA_DIR = os.path.join(BASE_DIR, "data")
 # route to folder for log files
 LOG_DIR = os.path.join(BASE_DIR, "logs")
+# route to with sql
+SQL_DIR = os.path.join(BASE_DIR, "sql")
 # create folder "data" if not exists
 os.makedirs(DATA_DIR, exist_ok=True)
+
+# --- Database Schema Configuration ---
+TARGET_DB_SCHEMA = "etl"
 
 # -- API configuration --
 API_ENDPOINTS = {
@@ -110,7 +115,7 @@ elif DB_TYPE == "postgresql":
         DB_CONNECTION_STRING = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         print(
             f"INFO: Connectiong to PostgreSQL: user={db_user}, host={db_host},"
-            "port={db_port}, dbname={db_name}"
+            f"port={db_port}, dbname={db_name}"
         )
 
 elif DB_TYPE == "mssql":
@@ -119,9 +124,8 @@ elif DB_TYPE == "mssql":
     db_host = os.getenv("MSSQL_DB_HOST")
     db_port = os.getenv("MSSQL_DB_PORT", "1433")
     db_name = os.getenv("MSSQL_DB_NAME")
-    odbc_driver = os.getenv(
-        "MSSQL_DB_ODBC_DRIVER", "ODBC Driver 17 for SQL Server"
-    ).replace(" ", "+")
+    odbc_driver_env = os.getenv("MSSQL_DB_ODBC_DRIVER", "ODBC Driver 17 for SQL Server")
+    odbc_driver_url = odbc_driver_env.replace(" ", "+")
 
     if not all([db_user, db_password, db_host, db_name]):
         print(
@@ -131,15 +135,15 @@ elif DB_TYPE == "mssql":
         )
         DB_CONNECTION_STRING = None
     else:
-        DB_CONNECTION_STRING = f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?driver={odbc_driver}"
+        DB_CONNECTION_STRING = f"mssql+pyodbc://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?driver={odbc_driver_url}"
         print(
             f"INFO: Connecting to MSSQL: user={db_user}, host={db_host},"
-            "port={db_port}, dbname={db_name}, driver={odbc_driver.replace('+', ' ')}"
+            f"port={db_port}, dbname={db_name}, driver={odbc_driver_env}"
         )
 else:
     print(
         f"Error: Unknown DB_TYPE '{DB_TYPE}' set in ETL_DB_TYPE."
-        "Pipeline can not continue in database configuration."
+        f"Pipeline can not continue in database configuration."
     )
     # Fallback to sqlite in case of Unknown database
     print("INFO: Setting default fallback SQLite configuration.")
@@ -164,5 +168,5 @@ if DB_CONNECTION_STRING:
 else:
     print(
         f"Error: DB_CONNECTION_STRING can not be successfully created for DB_TYPE: {DB_TYPE}."
-        "Check the configuration and environment variables."
+        f"Check the configuration and environment variables."
     )
