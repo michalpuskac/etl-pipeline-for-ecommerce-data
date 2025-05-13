@@ -7,10 +7,14 @@ import os
 
 import config
 from src.extract import fetch_from_api, save_to_json
-from src.load import create_db_engine, load_dataframe_to_db
+from src.load import create_db_engine, load_dataframe_to_db, apply_ddl_script
 from src.logging_setup import setup_logging  # Import setup function
-from src.transform import (convert_list_to_dataframe, transform_carts,
-                           transform_products, transform_users)
+from src.transform import (
+    convert_list_to_dataframe,
+    transform_carts,
+    transform_products,
+    transform_users
+)
 
 setup_logging()
 
@@ -27,7 +31,7 @@ BASE_DIR = config.BASE_DIR
 # --- 3. Main Pipeline Function ---
 def run_pipeline():
     """Run pipeline for extraction tranformation and loading data."""
-    logger.info("=" * 20 + " S T A R T   E T L   P I P E L I N E " + "=" * 20)
+    logger.info("%s S T A R T   E T L   P I P E L I N E %s", "=" * 20, "=" * 20)
 
     # === PART 1: EXTRACT ===
     logger.info("- - -  E X T R A C T I O N  - - -\n")
@@ -151,7 +155,7 @@ def run_pipeline():
         else:
             logger.error("Database engine not created. Load can not continue.")
 
-    logger.info("=" * 20 + " E N D   E T L   P I P E L I N E " + "=" * 20)
+    logger.info("%s E N D   E T L   P I P E L I N E %s", "=" * 20, "=" * 20)
 
 
 # --- Run the pipeline ---
