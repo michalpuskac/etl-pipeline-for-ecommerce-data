@@ -6,44 +6,81 @@ import logging
 import os
 
 import config
+from src.logging_setup import setup_logging
 from src.extract import fetch_from_api, save_to_json
-from src.load import create_db_engine, load_dataframe_to_db, apply_ddl_script
-from src.logging_setup import setup_logging  # Import setup function
 from src.transform import (
     convert_list_to_dataframe,
     transform_carts,
     transform_products,
-    transform_users
+    transform_users,
 )
+from src.load import create_db_engine, load_dataframe_to_db, apply_ddl_script
+
 
 setup_logging()
-
-# Logger for main.py
 logger = logging.getLogger(__name__)
 
 
-# --- 2. Additional configuration load ---
-API_ENDPOINTS = config.API_ENDPOINTS
-RAW_DATA_DIR = config.DATA_DIR
-BASE_DIR = config.BASE_DIR
-
-
-# --- 3. Main Pipeline Function ---
+# --- Main Pipeline Function ---
 def run_pipeline():
     """Run pipeline for extraction tranformation and loading data."""
     logger.info("%s S T A R T   E T L   P I P E L I N E %s", "=" * 20, "=" * 20)
 
+    logger.info("=== Database schema setup ===")
+    engine = create_db_engine(config.DB_CONNECTION_STRING)
+
+    if not engine:
+        logger.critical("Failed to create database engine. Halting pipeline.")
+        return
+
+    ddl_file_name = ""
+    if config.DB_TYPE == "mssql":
+        ddl_file_name = "schema_mssql_ddl.sql"
+    elif config.DB_TYPE == "postgresql":
+        ddl_file_name = "schema_postgresql_ddl.sql"
+    elif config.DB_TYPE == "sqlite":
+        ddl_file_name = "schema_sqlite_ddl.sql"
+
+    if ddl_file_name:
+        ddl_script_path = os.path.join(config.SQL_DIR, ddl_file_name)
+
+        if not os.path.exists(ddl_script_path):
+            logger.error(
+                "DDL script file not found at: %s. Halting pipeline.", ddl_script_path
+            )
+            return
+
+        try:
+            apply_ddl_script(engine, ddl_script_path)
+            logger.info(
+                "Database schema from '%s' applied successfully.", ddl_file_name
+            )
+        except Exception as e:
+            logger.critical(
+                "Could not apply DDL schema from '%s'. Halting pipeline. Error: %s",
+                ddl_file_name,
+                e,
+                exc_info=True,
+            )
+            return
+    else:
+        logger.warning(
+            "No DDL script defined for DB_TYPE: %s."
+            "Proceeding without DDL application.",
+            config.DB_TYPE,
+        )
+
     # === PART 1: EXTRACT ===
     logger.info("- - -  E X T R A C T I O N  - - -\n")
     extracted_files = {}  # Dictionary for saving paths to created files
-    for name, url in API_ENDPOINTS.items():
+    for name, url in config.API_ENDPOINTS.items():
         # Calling function from extract.py
         raw_data = fetch_from_api(url)
         if raw_data:
             json_filename = f"{name}_data.json"
-            file_path = os.path.join(RAW_DATA_DIR, json_filename)
+            file_path = os.path.join(config.DATA_DIR, json_filename)
             # Calling function from extract.py
-            save_to_json(raw_data, json_filename, RAW_DATA_DIR)
+            save_to_json(raw_data, json_filename, config.DATA_DIR)
             extracted_files[name] = file_path  # Save path for next step
         else:
             logger.warning("Extraction of %s failed,  skipping current endpoint.", name)
@@ -79,40 +116,44 @@ def run_pipeline():
                 continue
 
             # Aplication of specific transformation (function from transform.py)
-            df_cleaned = None
+            df_cleaned = None  # Initialize df_cleaned
             if name == "users":
-                df_cleaned = transform_users(df_raw)
-                if df_cleaned is not None:
-                    cleaned_dataframes["users"] = df_cleaned  # Save result
-                    logger.info(
-                        "Transformation of 'users' finished. Shape: %s\n",
-                        df_cleaned.shape,
-                    )
+                df_cleaned_users = transform_users(df_raw)
+                if df_cleaned_users is not None:
+                    cleaned_dataframes["users"] = df_cleaned_users
             elif name == "products":
-                df_cleaned = transform_products(df_raw)
-                if df_cleaned is not None:
-                    cleaned_dataframes["products"] = df_cleaned
-                    logger.info(
-                        "Transformation of 'products' finished. Shape: %s\n",
-                        df_cleaned.shape,
-                    )
+                df_cleaned_products = transform_products(df_raw)
+                if df_cleaned_products is not None:
+                    cleaned_dataframes["products"] = df_cleaned_products
             elif name == "carts":
                 carts_df, items_df = transform_carts(df_raw)
                 if carts_df is not None:
-                    cleaned_dataframes["carts"] = carts_df  # Uložíme oba výsledky
-                    logger.info(
-                        "Transformation of 'carts' finished. Shape: %s", carts_df.shape
-                    )
+                    cleaned_dataframes["carts"] = carts_df
                 if items_df is not None:
-                    cleaned_dataframes["cart_items"] = items_df  # Použijeme jiný klíč
-                    logger.info(
-                        "Transformation of 'cart_items' finished. Shape: %s",
-                        items_df.shape,
-                    )
-            else:
-                logger.warning(
-                    "Pro %s Specific transform function is not defined.", name
+                    cleaned_dataframes["cart_items"] = items_df
+
+            # Log shapes after transformations
+            if name == "users" and "users" in cleaned_dataframes:
+                logger.info(
+                    "Transformation of 'users' finished. Shape: %s\n",
+                    cleaned_dataframes["users"].shape,
                 )
+            elif name == "products" and "products" in cleaned_dataframes:
+                logger.info(
+                    "Transformation of 'products' finished. Shape: %s\n",
+                    cleaned_dataframes["products"].shape,
+                )
+            elif name == "carts":
+                if "carts" in cleaned_dataframes:
+                    logger.info(
+                        "Transformation of 'carts' finished. Shape: %s\n",
+                        cleaned_dataframes["carts"].shape,
+                    )
+                if "cart_items" in cleaned_dataframes:
+                    logger.info(
+                        "Transformation of 'cart_items' finished. Shape: %s\n",
+                        cleaned_dataframes["cart_items"].shape,
+                    )
 
         except Exception as e:
             # Detailed log with traceback
@@ -131,33 +172,48 @@ def run_pipeline():
     logger.info("- - -   L o a d   - - -\n")
     if not cleaned_dataframes:
         logger.warning("No transformed DataFrames for loading. Skipping load...")
+    elif not engine:  # Check if engine was created
+        logger.error("Database engine not available. Skipping load phase.")
     else:
-        # Create Database engine
-        logger.info("Connecting to database: %s", config.DB_CONNECTION_STRING)
-        engine = create_db_engine(config.DB_CONNECTION_STRING)
+        load_order = ["users", "products", "carts", "cart_items"]
+        # schema for SQLite should be none 
+        schema_to_load = config.TARGET_DB_SCHEMA if config.DB_TYPE not in ['sqlite'] else None
 
-        if engine:
-            load_order = ["users", "products", "carts", "cart_items"]
+        for simple_table_name in load_order:
+            if simple_table_name in cleaned_dataframes:
+                df_to_load = cleaned_dataframes[simple_table_name]
 
-            for table_key_name in load_order:
-                if table_key_name in cleaned_dataframes:
-                    df_to_load = cleaned_dataframes[table_key_name]
-                    sql_table_name = table_key_name
-                    load_dataframe_to_db(
-                        df_to_load, sql_table_name, engine, if_exists="replace"
-                    )
-                else:
-                    logger.warning(
-                        "DataFrame for key '%s can not be found in cleaned_dataframes.",
-                        table_key_name,
-                    )
-            logger.info("Loading Completed.")
-        else:
-            logger.error("Database engine not created. Load can not continue.")
+                logger.info(f"Loading DataFrame '{simple_table_name}' into SQL table "
+                            f"'{schema_to_load + '.' if schema_to_load else ''}{simple_table_name}'...")
+
+                load_dataframe_to_db(
+                    df=df_to_load,
+                    table_name=simple_table_name,
+                    engine=engine,
+                    schema_name=schema_to_load,
+                    if_exists="append",
+                )
+            else:
+                logger.warning(
+                    "DataFrame for key '%s' not found in cleaned_dataframes. Skipping.",
+                    simple_table_name,
+                )
+        logger.info("Load phase completed.")
 
     logger.info("%s E N D   E T L   P I P E L I N E %s", "=" * 20, "=" * 20)
 
 
 # --- Run the pipeline ---
 if __name__ == "__main__":
+    if not os.path.isdir(config.SQL_DIR):
+        logger.warning(
+            "SQL directory not found at: %s. DDL scripts might not be loaded."
+            "Creating it.",
+            config.SQL_DIR,
+        )
+        try:
+            os.makedirs(config.SQL_DIR, exist_ok=True)
+        except OSError as e:
+            logger.error("Could not create SQL directory %s: %s", config.SQL_DIR, e)
+
     run_pipeline()
